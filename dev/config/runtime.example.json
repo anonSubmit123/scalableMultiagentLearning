@@ -1,0 +1,189 @@
+{
+  "components": {
+    "provider": {
+      "assignment_optimizer": {
+        "factory": "runtime.providers:AStarMaxFlowAssignmentOptimizer",
+        "scope": "singleton"
+      },
+      "risk_transformer": {
+        "factory": "runtime.providers:create_risk_transformer",
+        "params": {
+          "model_path": "scratch/risk_transformer1.pth",
+          "device": "cpu"
+        },
+        "scope": "singleton"
+      },
+      "rl_meta_policy": {
+        "factory": "runtime.providers:RLMetaInterventionPolicy",
+        "params": {
+          "model_checkpoint_path": "scratch/rlmeta_policy1.pt"
+        },
+        "scope": "singleton"
+      },
+      "task_model_provider": {
+        "factory": "runtime.providers:GATTaskModelProvider",
+        "params": {
+          "domain": "wildfire",
+          "ic_features": [
+            "wind_velocity",
+            "humidity",
+            "wind_direction",
+            "slope",
+            "elevation",
+            "vegetation"
+          ],
+          "agent_features": [
+            "flow_rate",
+            "speed",
+            "approach_geometry",
+            "coverage_footprint"
+          ],
+          "feature_to_id": {
+            "wind_velocity": 0,
+            "humidity": 1,
+            "wind_direction": 2,
+            "slope": 3,
+            "elevation": 4,
+            "vegetation": 5,
+            "flow_rate": 6,
+            "speed": 7,
+            "approach_geometry": 8,
+            "coverage_footprint": 9
+          },
+          "ic_dynamics_models": {
+            "0": "scratch/ic_wildfire_hotspot_dynamics1.pth",
+            "1": "scratch/ic_wildfire_fireedge_dynamics1.pth"
+          },
+          "agent_efficacy_models": {
+            "0": "scratch/ic_wildfire_hotspot_efficacy1.pth",
+            "1": "scratch/ic_wildfire_fireedge_efficacy1.pth"
+          }
+        }
+      },
+      "policy_bank": {
+        "factory": "runtime.providers:InMemoryPolicyBank",
+        "scope": "singleton"
+      },
+      "agent_policy_bank": {
+        "ref": "policy_bank"
+      },
+      "shared_policy_bank": {
+        "ref": "policy_bank"
+      },
+      "agent_environment": {
+        "factory": "runtime.factory:SimulatorAgentEnvironment"
+      }
+    },
+    "simulators": {
+      "section42-wildfire": {
+        "factory": "external_simulators.default_simulator:DefaultSimulator",
+        "params": {
+          "domain": "wildfire",
+          "scenario_family": "section_4_2"
+        }
+      }
+    }
+  },
+  "physical_systems": [
+    {
+      "id": "local-worker-1",
+      "host": "127.0.0.1",
+      "lifecycle_endpoint": {
+        "host": "127.0.0.1",
+        "port": 40901
+      }
+    },
+    {
+      "id": "local-worker-2",
+      "host": "127.0.0.1",
+      "lifecycle_endpoint": {
+        "host": "127.0.0.1",
+        "port": 40902
+      }
+    }
+  ],
+  "capabilities": {
+    "small": {
+      "camera": true,
+      "survey": true,
+      "extinguisher_capacity": 10,
+      "speed": 20
+    },
+    "medium": {
+      "rescue": true,
+      "extinguisher_capacity": 50,
+      "speed": 30
+    },
+    "large": {
+      "rescue": true,
+      "extinguisher_capacity": 100,
+      "speed": 25
+    }
+  },
+  "controllers": [
+    {
+      "id": "controller-1",
+      "physical_system_id": "local-worker-1",
+      "endpoint": {
+        "host": "127.0.0.1",
+        "port": 41000
+      },
+      "managed_agents": [
+        "agent-1",
+        "agent-2"
+      ]
+    }
+  ],
+  "agents": [
+    {
+      "id": "agent-1",
+      "physical_system_id": "local-worker-1",
+      "capability": "small",
+      "endpoint": {
+        "host": "127.0.0.1",
+        "port": 41101
+      },
+      "controller_id": "controller-1",
+      "policy_manager_id": "policy-manager-1",
+      "simulator_id": "section42-wildfire",
+      "simulator": {
+        "role": "survey"
+      }
+    },
+    {
+      "id": "agent-2",
+      "physical_system_id": "local-worker-2",
+      "capability": "medium",
+      "endpoint": {
+        "host": "127.0.0.1",
+        "port": 41102
+      },
+      "controller_id": "controller-1",
+      "policy_manager_id": "policy-manager-1",
+      "simulator_id": "section42-wildfire",
+      "simulator": {
+        "role": "rescue"
+      }
+    }
+  ],
+  "policy_managers": [
+    {
+      "id": "policy-manager-1",
+      "physical_system_id": "local-worker-1",
+      "endpoint": {
+        "host": "127.0.0.1",
+        "port": 41200
+      }
+    }
+  ],
+  "admins": [
+    {
+      "id": "test-admin-1",
+      "physical_system_id": "local-worker-1",
+      "endpoint": {
+        "host": "127.0.0.1",
+        "port": 41300
+      }
+    }
+  ]
+}
